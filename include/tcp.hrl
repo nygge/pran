@@ -1,0 +1,12 @@
+-record(tcp,
+	{src,
+	 dst,
+	 seq_no,
+	 ack_no,
+	 offset,
+	 flags=[],
+	 window,
+	 checksum,
+	 urgent,
+	 options,
+	 payload}).

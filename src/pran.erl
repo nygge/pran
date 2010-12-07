@@ -14,15 +14,6 @@
 
 -include("elibpcap.hrl").
 
--define(DEF_OPTS,[{decoders,[{ethernet,pran_ethernet},
-			     {ip,pran_ip},
-			     {udp,pran_udp},
-			     {tcp,pran_tcp},
-			     {mtp2,pran_mtp2},
-			     {mtp3,pran_mtp3},
-			     {sccp,pran_sccp}
-			    ]}]).
-
 %%====================================================================
 %% API
 %%====================================================================
@@ -31,7 +22,8 @@
 %% Description:
 %%--------------------------------------------------------------------
 file(File) ->
-    file(File, ?DEF_OPTS).
+    Opts = pran_utils:load_config(),
+    file(File, Opts).
 
 file(File, Opts) ->
     {ok,Bin} = file:read_file(File),
@@ -46,7 +38,8 @@ grep_file(File, Pat) when is_binary(Pat) ->
     CP = pran_utils:mk_pattern(Pat),
     grep_file(File, {filters,[{pcap,{contain,CP}}]});
 grep_file(File, Filter) when is_tuple(Filter) ->
-    {ok,FD}=pran_pcap_file:open(File, [Filter|?DEF_OPTS]),
+    Opts = pran_utils:load_config(),
+    {ok,FD}=pran_pcap_file:open(File, [Filter|Opts]),
     read_loop(FD,pran_pcap_file:read(FD)).
 
 read_loop(FD,X) ->

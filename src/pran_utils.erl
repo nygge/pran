@@ -11,6 +11,8 @@
 -export([decode_payload/3,
 	 decode_payload/4,
 	 filter/3,
+	 get_conf_par/3,
+	 load_config/0,
 	 mk_pattern/1]).
 
 %%====================================================================
@@ -37,22 +39,50 @@ filter(Bin, Protocol, Filters) when is_atom(Protocol), is_list(Filters) ->
 %%    io:format("filter ~p ~p ~p~n",[Protocol,Filters,Fs]),
     apply_filter(Bin, Fs).
 
+get_conf_par(Protocol, Par, Opts) ->
+    case lists:keysearch(Protocol,1,Opts) of
+	{value,{Protocol,ProtoOpts}} ->
+	    case lists:keysearch(Par,1,ProtoOpts) of
+		{value,{Par,Value}} ->
+		    Value;
+		false ->
+		    io:format("get_conf ~p~n",[Protocol]),
+		    undefined
+	    end;
+	false -> 
+	    io:format("get_conf ~p~n",[Protocol]),
+	    undefined
+    end.
+
+load_config() ->    
+    %% Priv = code:priv_dir(pran),
+    Priv = "/home/anders/src/pran/priv",
+    WC = filename:join([Priv,"*.conf"]),
+    Fs = filelib:wildcard(WC),
+    T = [file:consult(F)||F<-Fs],
+    [KV||{ok,[KV]} <- T].
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
 get_decoder(Proto,Opts) ->
-    case lists:keysearch(decoders,1,Opts) of
-	{value,{decoders,Decoders}} ->
-	    case lists:keysearch(Proto,1,Decoders) of
-		{value,{Proto,Decoder}} ->
-%%		    io:format("get_decoder ~p -> ~p~n",[Proto,Decoder]),
-		    Decoder;
-		false ->
+    case lists:keysearch(pran,1,Opts) of
+	{value,{pran,POpts}} ->
+	    case lists:keysearch(decoders,1,POpts) of
+		{value,{decoders,Decoders}} ->
+		    case lists:keysearch(Proto,1,Decoders) of
+			{value,{Proto,Decoder}} ->
+			    %%		    io:format("get_decoder ~p -> ~p~n",[Proto,Decoder]),
+			    Decoder;
+			false ->
+			    io:format("get_decoder ~p~n",[Proto]),
+			    unknown
+		    end;
+		false -> 
 		    io:format("get_decoder ~p~n",[Proto]),
 		    unknown
 	    end;
-	false -> 
-	    io:format("get_decoder ~p~n",[Proto]),
+	false ->
 	    unknown
     end.
 

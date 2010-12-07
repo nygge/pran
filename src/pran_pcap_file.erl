@@ -25,11 +25,6 @@
 -define(BLOCKSIZE, 64000).
 -define(FILE_HDR_LEN,24).
 -define(FRAME_HDR_LEN,16).
--define(DEF_OPTS,[{decoders,[{ethernet,pran_ethernet},
-			     {ip,pran_ip},
-			     {udp,pran_udp},
-			     {tcp,pran_tcp}]}]).
-
 
 -record(state, {fd,
 		offset=?FILE_HDR_LEN,
@@ -66,8 +61,9 @@ read(Fd) ->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([File,Opts]) ->
-    Decoders = proplists:get_value(decoders, Opts, ?DEF_OPTS),
+    Decoders = proplists:get_value(decoders, Opts),
     Filters =  proplists:get_value(filters, Opts, []),
+    io:format("pcap_file opts ~p~n",[Opts]),
     {ok, Fd} = file:open(File, [read, raw, binary]),
     {ok, Bin} = file:pread(Fd, 0, ?BLOCKSIZE),
     case pran_pcap:file_header(Bin) of
@@ -186,7 +182,7 @@ read_block(#state{fd=Fd, offset=Offset}=State) ->
 %%--------------------------------------------------------------------
 test_read_file(File) ->
     et:trace_me(80, test_read_frames,pcap_file,open,[]),
-    {ok,Pid} = open(File,?DEF_OPTS),
+    {ok,Pid} = open(File,[]),
     F=read(Pid),
     test_read_frames(F,Pid).
 

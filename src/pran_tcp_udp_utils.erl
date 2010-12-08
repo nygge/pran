@@ -8,8 +8,7 @@
 -module(pran_tcp_udp_utils).
 
 %% API
--export([decode_payload/5,
-	payload_protocol/4]).
+-export([payload_protocol/4]).
 
 -define(PROTOCOLS,[{{udp,5060},sip}, {{tcp,5060},sip},
 		   {{udp,5062},sip}, {{tcp,5062},sip},
@@ -23,23 +22,7 @@
 %% Function: 
 %% Description:
 %%--------------------------------------------------------------------
-
-decode_payload(Proto, Src, Dst, Payload, Opts) ->
-    case payload_protocol(Proto, Src, Dst, Opts) of
-	sip ->
-	    try (rfc3261:'SIP-message'())(erlang:binary_to_list(Payload)) of
-		{ok, PDU, []} -> 
-		    {sip,PDU};
-		fail ->
-		    Partial = partial_sip(erlang:binary_to_list(Payload)),
-		    {sip,Partial}
-	    catch
-		_:_ -> Payload
-	    end;
-	unknown -> Payload
-    end.
-
-payload_protocol(Proto, FromPort, ToPort,Opts) ->
+payload_protocol(Proto, FromPort, ToPort,_Opts) ->
     case {port_to_protocol(Proto, FromPort),
 	  port_to_protocol(Proto, ToPort)} of
 	{undefined,undefined} -> unknown;
@@ -60,29 +43,6 @@ port_to_protocol(Proto,Port) ->
 	    undefined
     end.
 
+%% just for testing, should be replaced by Opts
 sip_ports() ->
     [{{Prot,Port},sip} || Prot <- [tcp,udp], Port <- [4060,5060,5065,5070,6060,7060,8060]].
-
-partial_sip(PDU) ->
-    case (rfc3261:'Request-Line'())(PDU) of
-	{ok,RL,More} ->
-	    {Hs,Rest} = get_headers(More,[]),
-	    {'Request',RL,Hs,Rest};
-	fail ->
-	    case (rfc3261:'Status-Line'())(PDU) of
-		{ok,SL,More} ->
-		    {Hs,Rest} = get_headers(More,[]),
-		    {SL,Hs,Rest};
-		fail ->
-		    fail
-	    end
-    end.
-
-get_headers(Bs,Acc) ->
-    case (rfc3261:'message-header'())(Bs) of
-	{ok,H,More} ->
-	    get_headers(More,[H|Acc]);
-	fail ->
-	    {lists:reverse(Acc),Bs}
-    end.
-		 

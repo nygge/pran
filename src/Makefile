@@ -12,8 +12,7 @@ MODULES=pran \
 	pran_udp \
 	pran_utils \
 	pran_mtp3 \
-	pran_sccp \
-	sip_tracer
+	pran_sccp
 
 EBIN_FILES:=$(MODULES:%=../ebin/%.beam)
 ERL_FILES:=$(MODULES:%=%.erl)

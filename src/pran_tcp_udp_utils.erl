@@ -8,7 +8,8 @@
 -module(pran_tcp_udp_utils).
 
 %% API
--export([decode_payload/5]).
+-export([decode_payload/5,
+	payload_protocol/4]).
 
 -define(PROTOCOLS,[{{udp,5060},sip}, {{tcp,5060},sip},
 		   {{udp,5062},sip}, {{tcp,5062},sip},
@@ -23,14 +24,13 @@
 %% Description:
 %%--------------------------------------------------------------------
 
-decode_payload(Proto, Src, Dst, Payload, _Opts) ->
-    case payload_protocol(Proto, Src, Dst) of
+decode_payload(Proto, Src, Dst, Payload, Opts) ->
+    case payload_protocol(Proto, Src, Dst, Opts) of
 	sip ->
 	    try (rfc3261:'SIP-message'())(erlang:binary_to_list(Payload)) of
 		{ok, PDU, []} -> 
 		    {sip,PDU};
 		fail ->
-%%		    io:format("failed to decode ~p~n",[Payload]),
 		    Partial = partial_sip(erlang:binary_to_list(Payload)),
 		    {sip,Partial}
 	    catch
@@ -39,12 +39,7 @@ decode_payload(Proto, Src, Dst, Payload, _Opts) ->
 	unknown -> Payload
     end.
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
-
-
-payload_protocol(Proto, FromPort, ToPort) ->
+payload_protocol(Proto, FromPort, ToPort,Opts) ->
     case {port_to_protocol(Proto, FromPort),
 	  port_to_protocol(Proto, ToPort)} of
 	{undefined,undefined} -> unknown;
@@ -54,6 +49,9 @@ payload_protocol(Proto, FromPort, ToPort) ->
 	_ -> unknown
     end.
 
+%%====================================================================
+%% Internal functions
+%%====================================================================
 port_to_protocol(Proto,Port) ->
     case lists:keysearch({Proto,Port},1,sip_ports()) of
 	{value,{_Key, Prot}} ->
@@ -64,7 +62,6 @@ port_to_protocol(Proto,Port) ->
 
 sip_ports() ->
     [{{Prot,Port},sip} || Prot <- [tcp,udp], Port <- [4060,5060,5065,5070,6060,7060,8060]].
-
 
 partial_sip(PDU) ->
     case (rfc3261:'Request-Line'())(PDU) of

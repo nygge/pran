@@ -15,5 +15,4 @@
 	 incl_payload_len    :: non_neg_integer(), 
 	 orig_payload_len    :: non_neg_integer(),
 	 truncated           :: boolean(),
-	 payload_bin         :: binary(),
-	 payload             :: binary()|tuple()}).
+	 payload_bin         :: binary()}).

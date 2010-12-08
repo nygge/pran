@@ -23,20 +23,35 @@
 %% Description:
 %%--------------------------------------------------------------------
 decode_payload(Protocol, Payload, Opts) ->
-    case get_decoder(Protocol,Opts) of
-	unknown -> Payload;
-	Decoder -> Decoder:decode(Payload, Opts)
-end.
+    do_decode(Protocol, Payload, [], Opts).
 
 decode_payload(Endian, Protocol, Payload, Opts) ->
+    do_decode(Endian, Protocol, Payload, [], Opts).
+
+do_decode(_Protocol, <<>>, Stack, _Opts) ->
+    lists:reverse(Stack);
+do_decode(Protocol, Payload, Stack, Opts) ->
+    %% io:format("decode ~p ~p~n",[Protocol,Stack]),
     case get_decoder(Protocol,Opts) of
-	unknown -> Payload;
-	Decoder -> Decoder:decode(Payload, Opts)
-end.
+	unknown -> lists:reverse([{Protocol,Payload}|Stack]);
+	Decoder ->
+	    {NewStack, Remaining, NextProtocol} = Decoder:decode(Payload, Stack, Opts),
+	    do_decode(NextProtocol, Remaining, NewStack, Opts)
+    end.
+
+do_decode(_Endian, _Protocol, <<>>, Stack, _Opts) ->
+    lists:reverse(Stack);
+do_decode(Endian, Protocol, Payload, Stack, Opts) ->
+    %% io:format("decode ~p ~p~n",[Protocol,Stack]),
+    case get_decoder(Protocol,Opts) of
+	unknown -> lists:reverse([{Protocol,Payload}|Stack]);
+	Decoder ->
+	    {NewStack, Remaining, NextProtocol} = Decoder:decode(Payload, Stack, Opts),
+	    do_decode(Endian,NextProtocol, Remaining, NewStack, Opts)
+    end.
 
 filter(Bin, Protocol, Filters) when is_atom(Protocol), is_list(Filters) ->
     Fs = proplists:get_value(Protocol, Filters, []),
-%%    io:format("filter ~p ~p ~p~n",[Protocol,Filters,Fs]),
     apply_filter(Bin, Fs).
 
 get_conf_par(Protocol, Par, Opts) ->
@@ -46,11 +61,9 @@ get_conf_par(Protocol, Par, Opts) ->
 		{value,{Par,Value}} ->
 		    Value;
 		false ->
-		    io:format("get_conf ~p~n",[Protocol]),
 		    undefined
 	    end;
 	false -> 
-	    io:format("get_conf ~p~n",[Protocol]),
 	    undefined
     end.
 
@@ -72,14 +85,11 @@ get_decoder(Proto,Opts) ->
 		{value,{decoders,Decoders}} ->
 		    case lists:keysearch(Proto,1,Decoders) of
 			{value,{Proto,Decoder}} ->
-			    %%		    io:format("get_decoder ~p -> ~p~n",[Proto,Decoder]),
 			    Decoder;
 			false ->
-			    io:format("get_decoder ~p~n",[Proto]),
 			    unknown
 		    end;
 		false -> 
-		    io:format("get_decoder ~p~n",[Proto]),
 		    unknown
 	    end;
 	false ->

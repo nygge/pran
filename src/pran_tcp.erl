@@ -8,7 +8,7 @@
 -module(pran_tcp).
 
 %% API
--export([decode/2]).
+-export([decode/3]).
 
 -include("tcp.hrl").
 
@@ -27,22 +27,23 @@
 
 decode(<<Src:16, Dst:16, SeqNo:32, AckNo:32, Offset:4, _Reserved:6,
 	 URG:1, ACK:1, PSH:1, RST:1, SYN:1, FIN:1,
-	 Window:16, Checksum:16, Urgent:16, More/binary>>,Opts) ->
+	 Window:16, Checksum:16, Urgent:16, More/binary>>,Stack, Opts) ->
     OptsLen = 4*(Offset - ?TCP_MIN_HDR_LEN),
     <<OptsBin:OptsLen/binary-unit:8,Payload/binary>> = More,
     TCPopts = opts(OptsBin),
-    #tcp{src=Src,
-	 dst=Dst,
-	 seq_no=SeqNo,
-	 ack_no=AckNo,
-	 offset=Offset,
-	 flags=[Flag||{Flag,1} <- lists:zip([urg,ack,psh,rst,syn,fin],
-					    [URG,ACK,PSH,RST,SYN,FIN])],
-	 window=Window,
-	 checksum=Checksum,
-	 urgent=Urgent,
-	 options=TCPopts,
-	 payload=pran_tcp_udp_utils:decode_payload(tcp,Src,Dst,Payload,Opts)}.
+    Protocol = pran_tcp_udp_utils:payload_protocol(tcp,Src,Dst,Opts),
+    Hdr = #tcp{src=Src,
+	       dst=Dst,
+	       seq_no=SeqNo,
+	       ack_no=AckNo,
+	       offset=Offset,
+	       flags=[Flag||{Flag,1} <- lists:zip([urg,ack,psh,rst,syn,fin],
+						  [URG,ACK,PSH,RST,SYN,FIN])],
+	       window=Window,
+	       checksum=Checksum,
+	       urgent=Urgent,
+	       options=TCPopts},
+    {[Hdr|Stack],Payload,Protocol}.
 
 %%====================================================================
 %% Internal functions

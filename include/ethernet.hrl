@@ -3,6 +3,5 @@
 -record(ethernet,
 	{src                 :: mac_address(),
 	 dst                 :: mac_address(),
-	 type,
-	 payload             :: binary|tuple()}).
+	 type}).
 

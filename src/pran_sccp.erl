@@ -8,7 +8,7 @@
 %%%-------------------------------------------------------------------
 -module(pran_sccp).
 
--export([decode/2]).
+-export([decode/3]).
 
 -include("sccp_params.hrl").
 -include("sccp_pdu.hrl").
@@ -16,20 +16,23 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% Unitdata(UDT)
-decode(<<?UDT:8, MH:4, PC:4,CalledPAPtr:8,CallingPAPtr:8,DataPtr:8,Vdata/binary>>,Opts) ->
+decode(<<?UDT:8, MH:4, PC:4,CalledPAPtr:8,CallingPAPtr:8,DataPtr:8,Vdata/binary>>,Stack,_Opts) ->
     Called=address_dec(get_par(CalledPAPtr-3,Vdata)),
     Calling=address_dec(get_par(CallingPAPtr-2,Vdata)),
     Data=get_par(DataPtr-1,Vdata),
-    #udt{prot_cl=PC, msg_handling=MH, calling=Calling,called=Called,
-	 data={tcap,pran_tcap:decode(Data,Opts)}};
+    {[{sccp,#udt{prot_cl=PC, msg_handling=MH, calling=Calling,
+		 called=Called}}|Stack],
+     Data,tcap};
 
-decode(<<?UDTS:8,RC:8,CalledPAPtr:8,CallingPAPtr:8,DataPtr:8,Vdata/binary>>,Opts) ->
+decode(<<?UDTS:8,RC:8,CalledPAPtr:8,CallingPAPtr:8,DataPtr:8,Vdata/binary>>,
+       _Stack,_Opts) ->
     Called=address_dec(get_par(CalledPAPtr-3,Vdata)),
     Calling=address_dec(get_par(CallingPAPtr-2,Vdata)),
     Data=get_par(DataPtr-1,Vdata),
-    #udts{ret_cause=RC,calling=Calling,called=Called,data=Data};
+    {{sccp,#udts{ret_cause=RC,calling=Calling,called=Called}},
+     Data, next_protocol};
 
-decode(<<?XUDT:8,MH:4, PC:4,HopC:8,CalledPAPtr:8,CallingPAPtr:8,DataPtr:8,OptPtr:8,Vdata/binary>>,Opts) ->
+decode(<<?XUDT:8,MH:4, PC:4,HopC:8,CalledPAPtr:8,CallingPAPtr:8,DataPtr:8,OptPtr:8,Vdata/binary>>,_Stack,_Opts) ->
     Called=address_dec(get_par(CalledPAPtr-4,Vdata)),
     Calling=address_dec(get_par(CallingPAPtr-3,Vdata)),
     Data=get_par(DataPtr-2,Vdata),
@@ -39,11 +42,8 @@ decode(<<?XUDT:8,MH:4, PC:4,HopC:8,CalledPAPtr:8,CallingPAPtr:8,DataPtr:8,OptPtr
     	true ->
     		get_opts(OptPtr-1,Vdata)
     end,
-    #xudt{prot_cl=PC, msg_handling=MH, calling=Calling,called=Called,hop_cnt=HopC,
-	  data=Data,opts=Opts};
-
-decode(Any,Opts) ->
-    {not_implemented, Any}.
+    {{sccp,#xudt{prot_cl=PC, msg_handling=MH, calling=Calling,
+		 called=Called,hop_cnt=HopC,opts=Opts}},Data,next_protocol}.
 
 
 get_par(0,Data) ->

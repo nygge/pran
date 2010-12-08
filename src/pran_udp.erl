@@ -8,7 +8,7 @@
 -module(pran_udp).
 
 %% API
--export([decode/2]).
+-export([decode/3]).
 
 -include("udp.hrl").
 
@@ -19,10 +19,10 @@
 %% Function: 
 %% Description:
 %%--------------------------------------------------------------------
-decode(<<Src:16,Dst:16,_Len:16,_Chk:16,Payload/binary>>,Opts) ->
-    #udp{src=Src,
-	 dst=Dst,
-	 payload=pran_tcp_udp_utils:decode_payload(udp,Src,Dst,Payload,Opts)}.
+decode(<<Src:16,Dst:16,_Len:16,_Chk:16,Payload/binary>>,Stack,Opts) ->
+    Hdr = #udp{src=Src,dst=Dst},
+    Protocol = pran_tcp_udp_utils:payload_protocol(udp,Src,Dst,Opts),
+    {[Hdr|Stack],Payload,Protocol}.
 
 %%====================================================================
 %% Internal functions

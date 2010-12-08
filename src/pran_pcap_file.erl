@@ -63,7 +63,6 @@ read(Fd) ->
 init([File,Opts]) ->
     Decoders = proplists:get_value(decoders, Opts),
     Filters =  proplists:get_value(filters, Opts, []),
-    io:format("pcap_file opts ~p~n",[Opts]),
     {ok, Fd} = file:open(File, [read, raw, binary]),
     {ok, Bin} = file:pread(Fd, 0, ?BLOCKSIZE),
     case pran_pcap:file_header(Bin) of
@@ -95,7 +94,7 @@ init([File,Opts]) ->
 %%--------------------------------------------------------------------
 handle_call(read, _From, State) ->
     case get_next(State) of
-	{#frame{}=Frame,State1} ->
+	{Frame,State1} ->
 	    {reply, Frame, State1};
 	eof ->
 	    {stop, normal, eof, State}
@@ -151,9 +150,8 @@ get_next(#state{seq=Seq,
 	{#frame{incl_payload_len=Len,payload_bin=Payload}=Frame,Rest} ->
 	    case pran_utils:filter(Payload,pcap,Filters) of
 		pass ->
-		    io:format("packet no ~p~n",[Seq]),
 		    PL = pran_utils:decode_payload(Endian, Network, Payload, Opts),
-		    {Frame#frame{payload=PL},
+		    {[Frame|PL],
 		     State#state{seq=Seq+1,
 				 offset=Offset+Len+?FRAME_HDR_LEN,
 				 buffer=Rest}};
@@ -189,7 +187,6 @@ test_read_file(File) ->
 test_read_frames(eof,Pid) ->
     ok;
 test_read_frames(F,Pid) ->
-%%    io:format("~p~n",[F]),
     et:trace_me(80, test_read_frames,pcap_file,read,[]),
     F1=read(Pid),
     test_read_frames(F1,Pid).

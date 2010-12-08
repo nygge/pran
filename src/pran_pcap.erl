@@ -127,5 +127,4 @@ mk_frame_rec(_Endian, Seq,
 	    orig_payload_len = Orig_payload_len,
 	    truncated = Truncated,
 	    payload_bin = Payload},
-	    %% payload = pran_utils:decode_payload(Endian, Network, Payload, Opts)},
      Rest}.

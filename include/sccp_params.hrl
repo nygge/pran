@@ -40,21 +40,20 @@
 -record(udt,{prot_cl,
 	     msg_handling,
 	     calling   :: #sccp_address{},
-	     called    :: #sccp_address{},
-	     data}).
+	     called    :: #sccp_address{}
+	     }).
 
 -record(udts,{ret_cause,
 	      calling   :: #sccp_address{},
-	      called    :: #sccp_address{},
-	      data}).
+	      called    :: #sccp_address{}
+	      }).
 -record(xudt,{prot_cl,
 	      msg_handling,
 	      calling   :: #sccp_address{},
 	      called    :: #sccp_address{},
 	      hop_cnt,
-	      data,
 	      opts}).
 -record(sccp_data, {calling   	:: #sccp_address{},
-		    called    			:: #sccp_address{},
+		    called 	:: #sccp_address{},
 		    data}).
 

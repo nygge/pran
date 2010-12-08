@@ -8,7 +8,7 @@
 -module(pran_ip).
 
 %% API
--export([decode/2]).
+-export([decode/3]).
 
 -include("ip.hrl").
 
@@ -42,16 +42,15 @@ decode(<<?IP_VERSION:4, HLen:4, _SrvcType:8, _TotLen:16,
 	 _TTL:8, Proto:8, _HdrChkSum:16,
 	 SrcIP1:8,SrcIP2:8,SrcIP3:8,SrcIP4:8,
 	 DestIP1:8,DestIP2:8,DestIP3:8,DestIP4:8,
-	 RestDgram/binary>>, Opts) when HLen>=5 ->
+	 RestDgram/binary>>, Stack, _Opts) when HLen>=5 ->
     OptsLen = 4*(HLen - ?IP_MIN_HDR_LEN),
     <<IPOpts:OptsLen/binary,Data/binary>> = RestDgram,
     Protocol = protocol(Proto),
-    #ip4{src={SrcIP1,SrcIP2,SrcIP3,SrcIP4},
-	 dst={DestIP1,DestIP2,DestIP3,DestIP4},
-	 proto=Protocol,
-	 opts=IPOpts,
-	 payload=pran_utils:decode_payload(Protocol,Data,Opts)
-	};
+    {[{ip_v4,#ip4{src={SrcIP1,SrcIP2,SrcIP3,SrcIP4},
+		  dst={DestIP1,DestIP2,DestIP3,DestIP4},
+		  proto=Protocol,
+		  opts=IPOpts}}|Stack],
+     Data,Protocol};
 
 %% First fragment
 decode(<<?IP_VERSION:4, HLen:4, _SrvcType:8, _TotLen:16, 
@@ -62,16 +61,15 @@ decode(<<?IP_VERSION:4, HLen:4, _SrvcType:8, _TotLen:16,
 	 _TTL:8, Proto:8, _HdrChkSum:16,
 	 SrcIP1:8,SrcIP2:8,SrcIP3:8,SrcIP4:8,
 	 DestIP1:8,DestIP2:8,DestIP3:8,DestIP4:8,
-	 RestDgram/binary>>, Opts) when HLen>=5 ->
+	 RestDgram/binary>>, Stack, _Opts) when HLen>=5 ->
     OptsLen = 4*(HLen - ?IP_MIN_HDR_LEN),
     <<IPOpts:OptsLen/binary,Data/binary>> = RestDgram,
     Protocol = protocol(Proto),
-    #ip4{src={SrcIP1,SrcIP2,SrcIP3,SrcIP4},
-	 dst={DestIP1,DestIP2,DestIP3,DestIP4},
-	 proto=Protocol,
-	 opts=IPOpts,
-	 payload=pran_utils:decode_payload(Protocol,Data,Opts)
-	};
+    {[{ip_v4,#ip4{src={SrcIP1,SrcIP2,SrcIP3,SrcIP4},
+		  dst={DestIP1,DestIP2,DestIP3,DestIP4},
+		  proto=Protocol,
+		  opts=IPOpts}}|Stack],
+     Data,Protocol};
 
 %% Intermediate fragment
 decode(<<?IP_VERSION:4, HLen:4, _SrvcType:8, _TotLen:16, 
@@ -82,16 +80,16 @@ decode(<<?IP_VERSION:4, HLen:4, _SrvcType:8, _TotLen:16,
 	 _TTL:8, Proto:8, _HdrChkSum:16,
 	 SrcIP1:8,SrcIP2:8,SrcIP3:8,SrcIP4:8,
 	 DestIP1:8,DestIP2:8,DestIP3:8,DestIP4:8,
-	 RestDgram/binary>>, Opts) when HLen>=5 ->
+	 RestDgram/binary>>, Stack, _Opts) when HLen>=5 ->
     OptsLen = 4*(HLen - ?IP_MIN_HDR_LEN),
     <<IPOpts:OptsLen/binary,Data/binary>> = RestDgram,
     Protocol = protocol(Proto),
-    #ip4{src={SrcIP1,SrcIP2,SrcIP3,SrcIP4},
-	 dst={DestIP1,DestIP2,DestIP3,DestIP4},
-	 proto=Protocol,
-	 opts=IPOpts,
-	 payload=pran_utils:decode_payload(Protocol,Data,Opts)
-	};
+    Hdr = #ip4{src={SrcIP1,SrcIP2,SrcIP3,SrcIP4},
+	       dst={DestIP1,DestIP2,DestIP3,DestIP4},
+	       proto=Protocol,
+	       opts=IPOpts
+	      },
+    {[{ip_v4,Hdr}|Stack],Data,Protocol};
 
 %% Last fragment
 decode(<<?IP_VERSION:4, HLen:4, _SrvcType:8, _TotLen:16, 
@@ -102,16 +100,15 @@ decode(<<?IP_VERSION:4, HLen:4, _SrvcType:8, _TotLen:16,
 	 _TTL:8, Proto:8, _HdrChkSum:16,
 	 SrcIP1:8,SrcIP2:8,SrcIP3:8,SrcIP4:8,
 	 DestIP1:8,DestIP2:8,DestIP3:8,DestIP4:8,
-	 RestDgram/binary>>, Opts) when HLen>=5 ->
+	 RestDgram/binary>>, Stack, _Opts) when HLen>=5 ->
     OptsLen = 4*(HLen - ?IP_MIN_HDR_LEN),
     <<IPOpts:OptsLen/binary,Data/binary>> = RestDgram,
     Protocol = protocol(Proto),
-    #ip4{src={SrcIP1,SrcIP2,SrcIP3,SrcIP4},
-	 dst={DestIP1,DestIP2,DestIP3,DestIP4},
-	 proto=Protocol,
-	 opts=IPOpts,
-	 payload=pran_utils:decode_payload(Protocol,Data,Opts)
-	}.
+    {[{ip_v4,#ip4{src={SrcIP1,SrcIP2,SrcIP3,SrcIP4},
+		  dst={DestIP1,DestIP2,DestIP3,DestIP4},
+		  proto=Protocol,
+		  opts=IPOpts}}|Stack],
+     Data,Protocol}.
 
 protocol(?IP_ICMP) ->
     icmp;

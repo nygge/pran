@@ -42,16 +42,8 @@ grep_file(File, Filter) when is_tuple(Filter) ->
     {ok,FD}=pran_pcap_file:open(File, [Filter|Opts]),
     read_loop(FD,pran_pcap_file:read(FD)).
 
-read_loop(FD,X) ->
-    read_loop(FD,X,[]).
-
-read_loop(_FD,eof,Acc) ->
-    lists:reverse(Acc);
-read_loop(FD,#frame{payload_bin=Bin}=Fr,Acc) ->
-    io:format("~p~n",[Fr]),
-    read_loop(FD,pran_pcap_file:read(FD),[]).
-%% read_loop(_FD,eof,Acc) ->
-%%     lists:reverse(Acc);
-%% read_loop(FD,#frame{payload_bin=Bin}=Fr,Acc) ->
-%%     %% io:format("~p~n",[Fr]),
-%%     Rs=read_loop(FD,pran_pcap_file:read(FD),[Fr|Acc]).
+read_loop(FD,Frame) when is_list(Frame) ->
+    io:format("~p~n",[Frame]),
+    read_loop(FD,pran_pcap_file:read(FD));
+read_loop(_FD,eof) ->
+    ok.

@@ -3,8 +3,7 @@
 		  si,
 		  opc,
 		  dpc,
-		  sls,
-		  payload
+		  sls
 		 }).
 
 %% Service Indicators

@@ -8,7 +8,7 @@
 -module(pran_ethernet).
 
 %% API
--export([decode/2]).
+-export([decode/3]).
 
 -include("ethernet.hrl").
 
@@ -25,12 +25,12 @@ decode(<<S1,S2,S3,S4,S5,S6,
 	 D1,D2,D3,D4,D5,D6,
 	 Type:16,
 	 Payload/binary>>,
-      Opts) ->
+       Stack,_Opts) ->
     Protocol = protocol(Type),
-    #ethernet{src={S1,S2,S3,S4,S5,S6},
-	      dst={D1,D2,D3,D4,D5,D6},
-	      type=Protocol,
-	      payload=pran_utils:decode_payload(Protocol, Payload, Opts)}.
+    Hdr = #ethernet{src={S1,S2,S3,S4,S5,S6},
+		    dst={D1,D2,D3,D4,D5,D6},
+		    type=Protocol},
+    {[{ethernet,Hdr}|Stack],Payload,Protocol}.
 
 %%====================================================================
 %% Internal functions

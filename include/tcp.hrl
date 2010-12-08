@@ -8,5 +8,4 @@
 	 window,
 	 checksum,
 	 urgent,
-	 options,
-	 payload}).
+	 options}).

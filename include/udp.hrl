@@ -1,4 +1,3 @@
 -record(udp,
 	{src,
-	 dst,
-	 payload}).
+	 dst}).

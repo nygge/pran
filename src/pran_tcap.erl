@@ -8,7 +8,7 @@
 -module(pran_tcap).
 
 %% API
--export([decode/2]).
+-export([decode/3]).
 
 %% Dummy function used when no decoder is found
 -export([nothing/2]).
@@ -25,9 +25,10 @@
 %% Function: 
 %% Description:
 %%--------------------------------------------------------------------
-decode(Bin,Opts) ->
+decode(Bin,Stack,Opts) ->
     {ok,Rec}='TCAPMessagesBasic':decode('TCMessage',Bin),
-    decode1(Rec, Opts).
+    {{dialogue,Dlg},{components,Cs}} = decode1(Rec, Opts),
+    {Cs++[{tcap,Dlg}]++Stack,<<>>,undefined}.
 
 %%====================================================================
 %% Internal functions
@@ -40,7 +41,7 @@ decode1({'begin',#'Begin'{dialoguePortion=DP,
     Dlg = decode_dialoguePortion(DP),
     AC = get_ac(Dlg),
     Cs1 = [decode_component(AC,C,Opts) || C<-Cs],
-    B#'Begin'{dialoguePortion=Dlg,components=Cs1};
+    {{dialogue,B#'Begin'{dialoguePortion=Dlg}},{components,Cs1}};
 
 decode1({'continue',#'Continue'{dialoguePortion=DP,
 				components=Cs}=C}, 
@@ -74,7 +75,8 @@ decode_component(AC,{invoke,#'Invoke'{operationCode=OpCode,parameter=Param}=I},
 		 {ok,Arg} -> Arg;
 		 Error -> Error
 	     end,
-    I#'Invoke'{parameter={map,Result}};
+    %% I#'Invoke'{parameter={map,Result}};
+    {map,Result};
 decode_component(AC,{returnResultLast,
 		  #'ReturnResult'{
 		    result=#'ReturnResult_result'{operationCode=OpCode,
@@ -85,7 +87,8 @@ decode_component(AC,{returnResultLast,
 		 {ok,Arg} -> Arg;
 		 Error -> Error
 	     end,
-    I#'ReturnResult'{result=R#'ReturnResult_result'{parameter={map,Result}}};
+    %% I#'ReturnResult'{result=R#'ReturnResult_result'{parameter={map,Result}}};
+    {map,Result};
 decode_component(AC,{returnResultLast,
 		  #'ReturnResult'{result=asn1_NOVALUE}=I},_Opts) ->
     I.

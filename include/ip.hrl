@@ -2,6 +2,5 @@
 	{src,
 	 dst,
 	 proto,
-	 opts,
-	 payload}).
+	 opts}).
 

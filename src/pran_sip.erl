@@ -21,6 +21,12 @@ decode(Payload, Stack, _Opts) ->
     try rfc3261:decode('SIP-message',Payload) of
 	{ok, PDU, <<>>} -> 
 	    {[{sip,PDU}|Stack],<<>>,done};
+	{ok, {'Request',_RL, Hdrs}=PDU, Body} -> 
+	    Protocol = get_protocol(Hdrs),
+	    {[{sip,PDU}|Stack],Body,Protocol};
+	{ok, {'Response',_RL, Hdrs}=PDU, Body} -> 
+	    Protocol = get_protocol(Hdrs),
+	    {[{sip,PDU}|Stack],Body,Protocol};
 	fail ->
 	    Partial = partial_sip(erlang:binary_to_list(Payload)),
 	    {[{sip,Partial}|Stack],<<>>,done}
@@ -33,6 +39,14 @@ decode(Payload, Stack, _Opts) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+get_protocol(Hdrs) ->
+    case lists:keyfind('Content-Type',1,Hdrs) of
+	{'Content-Type',{'media-type',"application",PList,[]}} ->
+	    list_to_atom(PList);
+	false ->
+	    done
+    end.
+
 partial_sip(PDU) ->
     case rfc3261:decode('Request-Line',PDU) of
 	{ok,RL,More} ->

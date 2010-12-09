@@ -242,8 +242,8 @@ SIP-message    =  Request / Response
 
 Request        =  Request-Line
                   *( message-header )
-                  CRLF
-                  [ message-body ] : {'Request', _YY1, _YY2, _YY4}.
+                  CRLF              : {'Request', _YY1, _YY2}.
+;                  [ message-body ] : {'Request', _YY1, _YY2, _YY4}.
 
 Request-Line   =  Method SP Request-URI SP SIP-Version CRLF :
     {'Request-Line', _YY1, _YY3, _YY5}.
@@ -360,8 +360,8 @@ extension-method  =  token
 
 Response          =  Status-Line
                      *( message-header )
-                     CRLF
-                     [ message-body ]
+                     CRLF        : {'Response',_YY1,_YY2}.
+;                     [ message-body ]
 
 Status-Line     =  SIP-Version SP Status-Code SP Reason-Phrase CRLF:
 {'Status-Line',_YY1,_YY3,_YY5}.

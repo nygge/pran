@@ -7,6 +7,7 @@ MODULES=pran \
 	pran_ip \
 	pran_pcap \
 	pran_pcap_file \
+	pran_sdp \
 	pran_sip \
 	pran_tcp \
 	pran_tcp_udp_utils \
@@ -16,11 +17,13 @@ MODULES=pran \
 	pran_sccp \
 	rfc2806 \
 	rfc3261 \
-	rfc4234_core
+	rfc4234_core \
+	rfc4566
 
 ABNF_MODULES = rfc2806 \
 	rfc3261 \
-	rfc4234_core
+	rfc4234_core \
+	rfc4566
 
 EBIN_FILES:=$(MODULES:%=../ebin/%.beam)
 ERL_FILES:=$(MODULES:%=%.erl)

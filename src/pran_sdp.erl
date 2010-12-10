@@ -21,8 +21,10 @@ decode(Payload, Stack, _Opts) ->
     try rfc4566:decode('session-description',Payload) of
 	{ok, PDU, <<>>} -> 
 	    {[{sdp,PDU}|Stack],<<>>,done};
+	{ok, PDU, More} ->  %% This only happens with fragmented packets
+	    {[{sdp,PDU}|Stack],More,done};
 	fail ->
-	    {[{sip,Payload}|Stack],<<>>,done}
+	    {[{sdp,Payload}|Stack],<<>>,done}
     catch
 	_:Reason ->
 	    io:format("SDP failed ~p~n",[Reason]),

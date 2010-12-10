@@ -10,7 +10,9 @@
 -compile(export_all).
 
 %% API
--export([file/1,file/2]).
+-export([open_file/2,
+	 read/1,
+	 grep_file/2]).
 
 -include("elibpcap.hrl").
 
@@ -21,16 +23,18 @@
 %% Function: 
 %% Description:
 %%--------------------------------------------------------------------
-file(File) ->
+open_file(File, Pat) when is_list(Pat) ->
+    open_file(File, list_to_binary(Pat));
+open_file(File, Pat) when is_binary(Pat) ->
+    CP = pran_utils:mk_pattern(Pat),
+    open_file(File, {filters,[{pcap,{contain,CP}}]});
+open_file(File, Filter) when is_tuple(Filter) ->
     Opts = pran_utils:load_config(),
-    file(File, Opts).
+    {ok,FD}=pran_pcap_file:open(File, [Filter|Opts]).
 
-file(File, Opts) ->
-    {ok,Bin} = file:read_file(File),
-    {#file_hdr{order=Order,
-	       major=2,minor=4,
-	       network=Net},FBin} = pran_pcap:file_header(Bin),
-    pran_pcap:packets(Order, Net, FBin, Opts).
+read(FD) ->
+    pran_pcap_file:read(FD).
+
 
 grep_file(File, Pat) when is_list(Pat) ->
     grep_file(File, list_to_binary(Pat));

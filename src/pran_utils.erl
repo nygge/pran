@@ -75,6 +75,16 @@ load_config() ->
     T = [file:consult(F)||F<-Fs],
     [KV||{ok,[KV]} <- T].
 
+%% the binary module was introduced in R14. So we work around
+%% that for older versions
+mk_pattern(Pat) ->
+    try 
+	binary:compile_pattern(Pat)
+    catch
+	_:_ ->
+	    Pat
+    end.
+
 %%====================================================================
 %% Internal functions
 %%====================================================================
@@ -94,14 +104,6 @@ get_decoder(Proto,Opts) ->
 	    end;
 	false ->
 	    unknown
-    end.
-
-mk_pattern(Pat) ->
-    try 
-	binary:compile_pattern(Pat)
-    catch
-	_:_ ->
-	    Pat
     end.
 
 apply_filters(Bin, [F|Fs]) ->

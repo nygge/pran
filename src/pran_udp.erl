@@ -22,7 +22,7 @@
 decode(<<Src:16,Dst:16,_Len:16,_Chk:16,Payload/binary>>,Stack,Opts) ->
     Hdr = #udp{src=Src,dst=Dst},
     Protocol = pran_tcp_udp_utils:payload_protocol(udp,Src,Dst,Opts),
-    {[Hdr|Stack],Payload,Protocol}.
+    {[{udp,Hdr}|Stack],Payload,Protocol}.
 
 %%====================================================================
 %% Internal functions

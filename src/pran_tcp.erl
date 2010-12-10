@@ -43,7 +43,7 @@ decode(<<Src:16, Dst:16, SeqNo:32, AckNo:32, Offset:4, _Reserved:6,
 	       checksum=Checksum,
 	       urgent=Urgent,
 	       options=TCPopts},
-    {[Hdr|Stack],Payload,Protocol}.
+    {[{tcp,Hdr}|Stack],Payload,Protocol}.
 
 %%====================================================================
 %% Internal functions

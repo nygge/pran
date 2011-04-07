@@ -13,12 +13,14 @@ MODULES=pran \
 	pran_tcp_udp_utils \
 	pran_udp \
 	pran_utils \
+	pran_mtp2 \
 	pran_mtp3 \
 	pran_sccp \
 	rfc2806 \
 	rfc3261 \
 	rfc4234_core \
-	rfc4566
+	rfc4566 \
+	sip_tracer
 
 ABNF_MODULES = rfc2806 \
 	rfc3261 \
@@ -42,7 +44,7 @@ INCLUDES=$(INCL_LIB)/elibpcap.hrl
 # Targets
 #
 
-all: $(EBIN_FILES)
+all: $(EBIN_DIR) $(EBIN_FILES)
 
 debug:
 	$(MAKE) ERLC_FLAGS+="$(ERLC_FLAGS) +debug_info -Ddebug"
@@ -61,3 +63,6 @@ $(EBIN_DIR)/%.beam: %.erl $(INCLUDES)
 
 $(EBIN_DIR)/%.beam: %.abnf
 	$(ABNFC) $(ABNFC_FLAGS) $<
+
+$(EBIN_DIR):
+	mkdir $(EBIN_DIR)

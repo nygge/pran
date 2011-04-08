@@ -28,7 +28,7 @@ decode(Payload, Stack, _Opts) ->
 	    Protocol = get_protocol(Hdrs),
 	    {[{sip,PDU}|Stack],Body,Protocol};
 	fail ->
-	    Partial = partial_sip(erlang:binary_to_list(Payload)),
+	    Partial = partial_sip(Payload),
 	    {[{sip,Partial}|Stack],<<>>,done}
     catch
 	_:Reason ->

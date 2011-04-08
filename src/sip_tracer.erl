@@ -128,24 +128,24 @@ addr_to_actor({127,0,0,1},6060) ->
     s_cscf;
 addr_to_actor({127,0,0,1},5067) ->
     b_party;
-addr_to_actor({192,168,49,25},Port) ->
+addr_to_actor({192,168,49,25},_Port) ->
     a_sub;
-addr_to_actor({192,168,49,56},Port) ->
+addr_to_actor({192,168,49,56},_Port) ->
     b_sub;
-addr_to_actor({192,168,32,249},Port) ->
+addr_to_actor({192,168,32,249},_Port) ->
     cscf;
-addr_to_actor({192,168,32,251},Port) ->
+addr_to_actor({192,168,32,251},_Port) ->
     cscf;
-addr_to_actor({192,168,32,44},Port) ->
+addr_to_actor({192,168,32,44},_Port) ->
     lpi;
-addr_to_actor(IP,Port) ->
+addr_to_actor(IP,_Port) ->
     IP.
 
 report_event(CPid, #sip{from=From,to=To,
 			slogan={request,Method},body=PDU}) ->
     et_collector:report_event(CPid, 90, From, To, Method,[{request,PDU}]);
 report_event(CPid, #sip{from=From,to=To,
-			slogan={status, Code, Phrase},body=PDU}) ->
+			slogan={status, Code, _Phrase},body=PDU}) ->
     et_collector:report_event(CPid, 90, From, To, Code,[{response,PDU}]);
 report_event(CPid, #sip{from=From,to=To,
 			slogan=parse_failed,body=PDU}) ->

@@ -8,8 +8,7 @@
 -module(sip_tracer).
 
 %% API
--export([dump_file/1,
-	 view_file/1]).
+-export([view_file/2]).
 
 -include("elibpcap.hrl").
 -include("ethernet.hrl").
@@ -17,12 +16,15 @@
 -include("tcp.hrl").
 -include("udp.hrl").
 
--record(sip, {src_addr,
+-record(sip, {timestamp,
+	      from,
+	      to,
+	      src_addr,
 	      src_port,
 	      dst_addr,
 	      dst_port,
 	      slogan,
-	      frame}).
+	      body}).
 
 %%====================================================================
 %% API
@@ -31,14 +33,10 @@
 %% Function: 
 %% Description:
 %%--------------------------------------------------------------------
-view_file(File) ->
-    CPid = start_et(),
-    Es = [extract_info(P) || P <- pran:file(File)],
-    [report_event(CPid,E) || E <- Es],
-    ok.
-
-dump_file(File) ->
-    [extract_info(P) || P <- pran:file(File)].
+view_file(File,Filter) ->
+    Pid = start_et(),
+    {ok,FD} = pran:open_file(File,Filter),
+    read_loop(FD,Pid).
 
 %%====================================================================
 %% Internal functions
@@ -47,53 +45,72 @@ start_et() ->
     {ok,VPid} = et_viewer:start(),
     et_viewer:get_collector_pid(VPid).
 
-report_event(CPid, #sip{src_addr=From,dst_addr=To,
-			slogan={request,Method},frame=PDU}) ->
-    et_collector:report_event(CPid, 90, From, To, Method,[{request,PDU}]);
-report_event(CPid, #sip{src_addr=From,dst_addr=To,
-			slogan={status, Code, Phrase},frame=PDU}) ->
-    et_collector:report_event(CPid, 90, From, To, Code,[{response,PDU}]);
-report_event(CPid, #sip{src_addr=From,dst_addr=To,
-			slogan=parse_failed,frame=PDU}) ->
-    et_collector:report_event(CPid, 90, From, To, parse_failed,
-			      [{parse_failed,PDU}]);
-report_event(_CPid,[]) ->
-    ok.
-    
-extract_info(#frame{payload=#ethernet{
-		      payload=#ip4{src=SrcIP,
-				   dst=DstIP,
-				   payload=#udp{src=SrcPort,
-						dst=DstPort,
-						payload={sip,SIP}}}}}=Frame) ->
-    #sip{src_addr=addr_to_actor(SrcIP,SrcPort),
+read_loop(FD, Pid) ->
+    case pran:read(FD) of
+	Packet when is_list(Packet) ->
+	    io:format("packet ~p~n",[Packet]),
+	    process_packet(Pid,Packet),
+	    read_loop(FD,Pid);
+	eof ->
+	    eof
+    end.
+
+process_packet(CPid,Packet) ->
+    case extract_info(Packet) of
+	ignore -> ignore;
+	Rec -> report_event(CPid, Rec)
+    end.
+
+extract_info([#frame{timestamp=TS}|More]) ->
+    extract_info(More,[{ts,TS}]).
+
+extract_info([{ethernet,#ethernet{}}|More],Acc) ->
+    extract_info(More,Acc);
+extract_info([{ip_v4,#ip4{src=SrcIP,dst=DstIP}}|More],Acc) ->
+    extract_info(More,[{src_ip,SrcIP},{dst_ip,DstIP}|Acc]);
+extract_info([{udp,#udp{src=SrcPort,dst=DstPort}}|More],
+	     [{src_ip,SrcIP},{dst_ip,DstIP}|_]=Acc) ->
+    From = addr_to_actor(SrcIP,SrcPort),
+    To = addr_to_actor(DstIP,DstPort),
+    extract_info(More,[{from,From},{to,To},
+		       {src_port,SrcPort},
+		       {dst_port,DstPort}|Acc]);
+extract_info([{tcp,#tcp{src=SrcPort,dst=DstPort}}|More],
+	     [{src_ip,SrcIP},{dst_ip,DstIP}|_]=Acc) ->
+    From = addr_to_actor(SrcIP,SrcPort),
+    To = addr_to_actor(DstIP,DstPort),
+    extract_info(More,[{from,From},{to,To},
+		       {src_port,SrcPort},
+		       {dst_port,DstPort}
+		       |Acc]);
+extract_info([{sip,SIP}|Body],
+	     [{from,From},{to,To},
+	      {src_port,SrcPort},{dst_port,DstPort},
+	      {src_ip,SrcIP},{dst_ip,DstIP},
+	      {ts,TS}]) ->
+    #sip{timestamp=TS,
+	 from=From,
+	 to=To,
+	 src_addr=SrcIP,
 	 src_port=SrcPort,
-	 dst_addr=addr_to_actor(DstIP,DstPort),
+	 dst_addr=DstIP,
 	 dst_port=DstPort,
 	 slogan=extract_sip(SIP),
-	 frame=Frame};
-extract_info(#frame{payload=#ethernet{
-		      payload=#ip4{src=SrcIP,
-				   dst=DstIP,
-				   payload=#tcp{src=SrcPort,
-						dst=DstPort,
-						payload={sip,SIP}}}}}=Frame) ->
-    #sip{src_addr=addr_to_actor(SrcIP,SrcPort),
-	 src_port=SrcPort,
-	 dst_addr=addr_to_actor(DstIP,DstPort),
-	 dst_port=DstPort,
-	 slogan=extract_sip(SIP),
-	 frame=Frame};
-extract_info(#frame{seq_no=Seq}=_What) ->
-%%    io:format("seq=~p what = ~p~n",[Seq,_What]),
-    [].
+	 body={SIP,Body}};
+extract_info([{unknown,_}|_],_) ->
+    ignore.
 
 extract_sip({'Request',
-	     {'Request-Line',Method,_URI,_Version},
-	     _Headers,
-	     _Body}) ->
+		  {'Request-Line',Method,_URI,_Version},
+	     _Headers}) ->
     {request,Method};
-extract_sip([[["SIP",47,"2",46,"0"],32,StatusCode,32,ReasonPhrase,"\r\n"]|_]) ->
+extract_sip({'Request',
+		  {'Request-Line',Method,_URI,_Version},
+	     _Headers,_Rest}) ->
+    {request,Method};
+
+extract_sip({'Response',{'Status-Line',{'SIP-Version',"2.0"}
+			 ,StatusCode,ReasonPhrase},_Hdrs}) ->
     {status, StatusCode,ReasonPhrase};
 extract_sip(X) ->
     io:format("what = ~p~n",[X]),
@@ -110,4 +127,30 @@ addr_to_actor({127,0,0,1},5070) ->
 addr_to_actor({127,0,0,1},6060) ->
     s_cscf;
 addr_to_actor({127,0,0,1},5067) ->
-    b_party.
+    b_party;
+addr_to_actor({192,168,49,25},Port) ->
+    a_sub;
+addr_to_actor({192,168,49,56},Port) ->
+    b_sub;
+addr_to_actor({192,168,32,249},Port) ->
+    cscf;
+addr_to_actor({192,168,32,251},Port) ->
+    cscf;
+addr_to_actor({192,168,32,44},Port) ->
+    lpi;
+addr_to_actor(IP,Port) ->
+    IP.
+
+report_event(CPid, #sip{from=From,to=To,
+			slogan={request,Method},body=PDU}) ->
+    et_collector:report_event(CPid, 90, From, To, Method,[{request,PDU}]);
+report_event(CPid, #sip{from=From,to=To,
+			slogan={status, Code, Phrase},body=PDU}) ->
+    et_collector:report_event(CPid, 90, From, To, Code,[{response,PDU}]);
+report_event(CPid, #sip{from=From,to=To,
+			slogan=parse_failed,body=PDU}) ->
+    et_collector:report_event(CPid, 90, From, To, parse_failed,
+			      [{parse_failed,PDU}]);
+report_event(_CPid,[]) ->
+    ok.
+    

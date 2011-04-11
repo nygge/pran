@@ -12,6 +12,7 @@
 %% API
 -export([open_file/2,
 	 read/1,
+	 close/1,
 	 grep_file/2]).
 
 -include("elibpcap.hrl").
@@ -30,11 +31,13 @@ open_file(File, Pat) when is_binary(Pat) ->
     open_file(File, {filters,[{pcap,{contain,CP}}]});
 open_file(File, Filter) when is_tuple(Filter) ->
     Opts = pran_utils:load_config(),
-    {ok,FD}=pran_pcap_file:open(File, [Filter|Opts]).
+    {ok,_FD}=pran_pcap_file:open(File, [Filter|Opts]).
 
 read(FD) ->
     pran_pcap_file:read(FD).
 
+close(FD) ->
+    pran_pcap_file:close(FD).
 
 grep_file(File, Pat) when is_list(Pat) ->
     grep_file(File, list_to_binary(Pat));

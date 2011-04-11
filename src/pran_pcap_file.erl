@@ -11,7 +11,8 @@
 
 %% API
 -export([open/2,
-	 read/1]).
+	 read/1,
+	 close/1]).
 
 -export([test_read_file/1]).
 
@@ -48,6 +49,9 @@ open(File, Opts) ->
 
 read(Fd) ->
     gen_server:call(Fd,read).
+
+close(Fd) ->
+    gen_server:call(Fd,close).
 
 %%====================================================================
 %% gen_server callbacks
@@ -98,7 +102,11 @@ handle_call(read, _From, State) ->
 	    {reply, Frame, State1};
 	eof ->
 	    {stop, normal, eof, State}
-    end.
+    end;
+
+handle_call(close, _From, #state{fd=FD}=State) ->
+    file:close(FD),
+    {stop, normal, ok, State}.
 
 
 %%--------------------------------------------------------------------

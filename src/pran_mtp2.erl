@@ -18,16 +18,13 @@ decode(Bin, Stack, _Opts) ->
     {[{mtp2,Header}|Stack], Payload, NextProtocol}.
 
 %% Decode "normal" messages (without an Extended Sequence Number)
-do_decode(false=_ESN, <<BIB:1, BSN:7, FIB:1, FSN:7, _Spare:2, LI:6, SIO:1/binary,
+do_decode(false=_ESN, <<BIB:1, BSN:7, FIB:1, FSN:7, _Spare:2, LI:6,
 			Rest/binary>>) when LI > 2->
-    L=size(Rest),
-    SIF_len=L-2,
-    <<SIF:SIF_len/binary,_CRC:16>> = Rest,
-    {#mtp2_msu{bsn=BSN, bib=BIB, fsn=FSN, fib=FIB, sio=SIO, sif=SIF}, Rest, mtp3};
+    {#mtp2_msu{bsn=BSN, bib=BIB, fsn=FSN, fib=FIB}, Rest, mtp3};
 
 do_decode(false=_ESN, <<_BIB:1, _BSN:7, _FIB:1, _FSN:7, _Spare:2, LI:6,
-			Rest/binary>>) when LI == 0 ->
-    {{fisu}, Rest, done};
+			_CK/binary>>) when LI == 0 ->
+    {{fisu}, <<>>, done};
 
 do_decode(false=_ESN, <<_BIB:1, _BSN:7, _FIB:1, _FSN:7, _Spare:2, LI:6,
 			Status:8, Rest/binary>>) when LI==1 ->
@@ -39,11 +36,8 @@ do_decode(false=_ESN, <<_BIB:1, _BSN:7, _FIB:1, _FSN:7, _Spare:2, LI:6,
 
 %% Decode messages with a Extended Sequence Number
 do_decode(true=_ESN, <<BSN:12,_Res1:3,BIB:1, FSN:12, _Res2:3, FIB:1, LI:9,
-		       _Spare:7, SIO:1/binary, Rest/binary>>) when LI > 2 ->
-    L=size(Rest),
-    SIF_len=L-2,
-    <<SIF:SIF_len/binary,_CRC:16>> = Rest,
-    {#mtp2_msu{bsn=BSN, bib=BIB, fsn=FSN, fib=FIB, sio=SIO, sif=SIF}, Rest, mtp3};
+		       _Spare:7, Rest/binary>>) when LI > 2 ->
+    {#mtp2_msu{bsn=BSN, bib=BIB, fsn=FSN, fib=FIB}, Rest, mtp3};
 
 
 %% Is this correct?

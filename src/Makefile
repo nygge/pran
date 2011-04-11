@@ -66,3 +66,20 @@ $(EBIN_DIR)/%.beam: %.abnf
 
 $(EBIN_DIR):
 	mkdir $(EBIN_DIR)
+
+$(EBIN_DIR)/pran.beam: $(INCL_LIB)/elibpcap.hrl
+$(EBIN_DIR)/pran_ethernet.beam: $(INCL_LIB)/ethernet.hrl
+$(EBIN_DIR)/pran_ip.beam: $(INCL_LIB)/ip.hrl
+$(EBIN_DIR)/pran_mtp2.beam: $(INCL_LIB)/mtp2.hrl
+$(EBIN_DIR)/pran_mtp3.beam: $(INCL_LIB)/mtp3.hrl
+$(EBIN_DIR)/pran_pcap.beam: $(INCL_LIB)/elibpcap.hrl
+$(EBIN_DIR)/pran_pcap_file.beam: $(INCL_LIB)/elibpcap.hrl
+$(EBIN_DIR)/pran_sccp.beam: $(INCL_LIB)/sccp_params.hrl
+$(EBIN_DIR)/pran_sccp.beam: $(INCL_LIB)/sccp_pdu.hrl
+$(EBIN_DIR)/pran_tcp.beam: $(INCL_LIB)/tcp.hrl
+$(EBIN_DIR)/pran_udp.beam: $(INCL_LIB)/udp.hrl
+$(EBIN_DIR)/sip_tracer.erl: $(INCL_LIB)/elibpcap.hrl \
+	$(INCL_LIB)/ethernet.hrl \
+	$(INCL_LIB)/ip.hrl \
+	$(INCL_LIB)/tcp.hrl \
+	$(INCL_LIB)/udp.hrl
